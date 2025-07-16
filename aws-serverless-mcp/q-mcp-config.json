@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aws-serverless": {
+      "command": "node",
+      "args": ["/home/eddev/Formacao-AWS/bia-IA-AWS/aws-serverless-mcp/dist/index.js"],
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "AWS_PROFILE": "default"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "aws-serverless": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "AWS_REGION": "us-east-1"
+      }
+    }
+  }
+}

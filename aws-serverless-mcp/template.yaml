@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'AWS Serverless MCP Server - Free Tier Resources Only'
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        NODE_ENV: production
+
+Resources:
+  # Função Lambda para o MCP Server
+  MCPServerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aws-serverless-mcp-server
+      CodeUri: dist/
+      Handler: index.handler
+      Description: 'MCP Server para integração com recursos AWS gratuitos'
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:ListAllMyBuckets
+                - s3:ListBucket
+                - s3:GetObject
+                - lambda:ListFunctions
+                - lambda:GetFunction
+                - cloudwatch:GetMetricStatistics
+                - cloudwatch:ListMetrics
+                - sts:GetCallerIdentity
+              Resource: '*'
+      Events:
+        MCPApi:
+          Type: Api
+          Properties:
+            Path: /mcp
+            Method: post
+            RestApiId: !Ref MCPServerApi
+
+  # API Gateway para expor o MCP Server
+  MCPServerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: aws-serverless-mcp-api
+      StageName: prod
+      Description: 'API Gateway para AWS Serverless MCP Server'
+      Cors:
+        AllowMethods: "'POST, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+  # Bucket S3 para demonstração (free tier)
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'aws-mcp-demo-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  # CloudWatch Log Group para a função Lambda
+  MCPServerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${MCPServerFunction}'
+      RetentionInDays: 7
+
+Outputs:
+  MCPServerApi:
+    Description: 'URL da API Gateway para o MCP Server'
+    Value: !Sub 'https://${MCPServerApi}.execute-api.${AWS::Region}.amazonaws.com/prod/mcp'
+    Export:
+      Name: !Sub '${AWS::StackName}-MCPServerApiUrl'
+
+  MCPServerFunction:
+    Description: 'Nome da função Lambda do MCP Server'
+    Value: !Ref MCPServerFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-MCPServerFunction'
+
+  DemoBucket:
+    Description: 'Nome do bucket S3 de demonstração'
+    Value: !Ref DemoBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-DemoBucket'
